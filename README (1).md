@@ -1,0 +1,103 @@
+# Ouro Multimodal Evaluation Lab
+
+A standalone, public-safe research scaffold for FIU's Fall 2026 capstone. The lab studies one question:
+
+> When is a multimodal evaluator reliable enough to return `PASS` or `HOLD`, and when should it abstain?
+
+This repository contains only synthetic fixtures and frozen, anonymous evaluator outputs. It has no connection to Ouro production systems, customer data, private prompts, model routing, repair logic, credentials, or commercial thresholds.
+
+## Start here
+
+This is a working v0.1 scaffold, not a completed research lab and not a source of research findings.
+
+- [Current implementation status and research gates](CURRENT_STATUS.md)
+- [Proposed three-team vertical slices](TEAM_SLICES.md)
+- [First combined meeting checklist](KICKOFF_CHECKLIST.md)
+- [Frozen public data contract](docs/DATA_CONTRACT.md)
+- [Native AVC inspection guide](docs/NATIVE_AVC_INSPECTION.md)
+- [Research protocol](docs/RESEARCH_PROTOCOL.md)
+- [Threat model](docs/THREAT_MODEL.md)
+- [Independent rerun procedure](docs/INDEPENDENT_RERUN.md)
+- [Card #465 fictional dropout reproducibility fixture](data/card465_dropout_evidence/README.md)
+- A reproducible fictional dropout agreement report (`make dropout-agreement-report`) that preserves unavailable false-pass/false-hold metrics when no independent reference exists.
+- [Student contribution workflow](CONTRIBUTING.md)
+
+Do not begin real participant annotation until FIU has recorded the applicable human-subjects determination and the gates in `CURRENT_STATUS.md` have been satisfied.
+
+## What ships in the scaffold
+
+- deterministic synthetic fixtures and SHA-256 manifests;
+- a frozen evaluator-output contract using anonymous evaluator aliases;
+- a browser annotation interface with blinded randomized assignments, confidence, timing, and repeat-item controls;
+- raw annotation preservation and a separate adjudication database schema;
+- a synthetic benchmark runner for false `PASS`, false `HOLD`, Brier score, ECE, and risk-versus-coverage;
+- basic two-rater agreement with confidence intervals;
+- JSON/CSV annotation export;
+- a separately versioned native AVC inspection path that preserves native approve/hold/reject, null probability, coverage, and modality states without changing the frozen v1 benchmark;
+- export-boundary scanning, Docker support, tests, and handoff documentation.
+
+The original seeded benchmark fixtures and outputs demonstrate the pipeline. They are synthetic examples, not research findings or claims about Ouro. Its original video records are JSON placeholders; a separate [playable fictional visual pair](data/public_playable/README.md) now exercises the browser video path and human visual review. A [public synthetic audio pair](data/public_audio/README.md) (clean tone and the same tone with a 1.000 s dropout) exercises the browser audio path. Four [fictional intent-bearing clips](data/public_intent/README.md), whose frozen creator intent is published only as SHA-256 commitments until reveal, support piloting an intent-survival protocol. It has no real evaluator outputs. The current benchmark compares anonymous seeded demo outputs with synthetic truth; human-grounded comparison is a required student deliverable.
+
+## Quick start
+
+Requires Python 3.11+ and no third-party packages.
+
+```bash
+make bootstrap
+make run
+```
+
+Open <http://localhost:8080>. Use separate pseudonymous rater IDs such as `rater-a` and `rater-b` only for the synthetic demonstration.
+
+Run the reproducible synthetic benchmark:
+
+```bash
+make benchmark
+```
+
+Run all checks:
+
+```bash
+make check
+```
+
+Aggregate agreement is not exposed by the annotation web server during collection. A person with local access to the lab database can generate the offline report after the appropriate review stage; this command does not establish participant-release authority.
+
+Database connections opened with `with connect(path) as db` commit on success or
+roll back on an exception, then close before returning. This releases Windows
+file handles without waiting for garbage collection. Keep database operations
+inside that block; callers opening a connection directly must close it explicitly.
+
+## Demonstration workflow
+
+1. `seed` generates the same synthetic artifacts from the same seed.
+2. `ingest` verifies every artifact against its SHA-256 manifest.
+3. The API creates randomized assignments, including blinded repeats.
+4. Raters annotate without seeing seeded truth or evaluator outputs.
+5. `benchmark` joins frozen outputs to seeded synthetic truth by artifact hash and writes an auditable demonstration report.
+6. `export` emits allow-listed annotation fields.
+7. A second person follows `docs/INDEPENDENT_RERUN.md` from a clean checkout.
+
+See `CURRENT_STATUS.md` for the differences between this demonstration and a valid human-grounded study.
+
+## Commands
+
+```bash
+python -m ouro_eval_lab.cli seed --root data/fixtures --seed 20260825
+python -m ouro_eval_lab.cli init-db --db data/lab.db
+python -m ouro_eval_lab.cli ingest --db data/lab.db --manifest data/fixtures/manifest.json
+python -m ouro_eval_lab.cli serve --db data/lab.db --port 8080
+python -m ouro_eval_lab.cli benchmark --manifest data/fixtures/manifest.json --outputs data/fixtures/evaluator_outputs.json --out data/exports/report.json
+python -m ouro_eval_lab.cli export --db data/lab.db --out data/exports/annotations.json
+python -m ouro_eval_lab.cli agreement --db data/lab.db --out data/exports/agreement.json
+python -m ouro_eval_lab.cli inspect-avc --manifest path/to/manifest.json --evaluation path/to/evaluation.json --out data/exports/native-avc-inspection.json
+```
+
+## Non-negotiable boundaries
+
+- Do not add production or customer material.
+- Do not add credentials, private prompts, model identities, hidden reasoning, routing, repair logic, or commercial thresholds.
+- Do not treat synthetic demo metrics as conclusions.
+- Preserve independent judgments and disagreement; adjudication is an additional record, never an overwrite.
+- Pin analyses to artifact hashes, manifest version, evaluator alias, code commit, and random seed.
+- Do not place private student or sponsor contact information in this public repository.
